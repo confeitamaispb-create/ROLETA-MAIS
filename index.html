@@ -148,8 +148,9 @@ h1 {
     touch-action: none;
 }
 
-#roleta.centro-ativo {
-    cursor: pointer;
+#roleta.bloqueada {
+    cursor: not-allowed;
+    filter: grayscale(35%) brightness(0.9);
 }
 
 #roleta.arrastando {
@@ -170,24 +171,26 @@ h1 {
     filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
 }
 
-#girar {
+#enviarDados {
+    width: 100%;
     border: none;
     outline: none;
-    padding: 17px 50px;
+    padding: 15px 30px;
     border-radius: 50px;
     background: linear-gradient(135deg, var(--dourado-claro), var(--dourado));
     color: var(--marrom-escuro);
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
     letter-spacing: 1px;
     cursor: pointer;
     box-shadow: 0 8px 25px rgba(0,0,0,0.35);
     transition: 0.2s;
+    margin-top: 4px;
 }
 
-#girar:hover { transform: translateY(-3px) scale(1.03); }
-#girar:active { transform: scale(0.97); }
-#girar:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+#enviarDados:hover { transform: translateY(-3px) scale(1.02); }
+#enviarDados:active { transform: scale(0.97); }
+#enviarDados:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
 #mensagemAguarde {
     display: none;
@@ -214,6 +217,12 @@ h1 {
     color: var(--creme);
     font-size: 15px;
     font-weight: bold;
+}
+
+.instrucao-girar.liberada {
+    background: rgba(37,211,102,0.16);
+    border-color: var(--verde);
+    animation: pulsar 1.4s ease-in-out infinite;
 }
 
 .instrucao-girar strong {
@@ -346,64 +355,13 @@ h1 {
     h1 { font-size: 27px; }
     .subtitulo { font-size: 14px; }
     .roleta-area { width: 92vw; height: 92vw; }
-    #girar { padding: 15px 40px; font-size: 18px; }
+    #enviarDados { padding: 14px 25px; font-size: 17px; }
     .parabens { font-size: 25px; }
     .premio { font-size: 21px; }
 }
 
-.painel-premios {
-    display: none;
-    width: min(100%, 420px);
-    margin: 0 auto 24px;
-    padding: 20px;
-    text-align: left;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(230,194,122,0.45);
-}
-.painel-premios h2 { color: var(--dourado-claro); margin-bottom: 6px; font-size: 21px; }
-.painel-premios p { color: var(--creme); font-size: 13px; margin-bottom: 15px; }
-.premio-editor {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 7px;
-    margin-bottom: 12px;
-    padding: 12px;
-    border-radius: 14px;
-    background: rgba(0,0,0,0.16);
-}
-.premio-editor input {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(230,194,122,0.45);
-    background: rgba(255,255,255,0.10);
-    color: var(--creme);
-    outline: none;
-}
-.premio-editor input:focus { border-color: var(--dourado-claro); }
-.btn-remover {
-    border: none;
-    border-radius: 10px;
-    padding: 9px;
-    cursor: pointer;
-    font-weight: bold;
-    background: rgba(217,83,79,0.25);
-    color: #ffdcdb;
-}
-.btn-secundario {
-    width: 100%;
-    border: 1px solid var(--dourado);
-    border-radius: 12px;
-    padding: 12px;
-    cursor: pointer;
-    background: rgba(201,154,82,0.18);
-    color: var(--dourado-claro);
-    font-weight: bold;
-}
 @media (min-width: 900px) {
     .container { max-width: 760px; }
-    .painel-premios { max-width: 520px; }
 }
 
 </style>
@@ -413,20 +371,11 @@ h1 {
 
 <div class="container">
 
-    <div id="painelPremios" class="painel-premios">
-        <h2>🎁 Prêmios da Roleta</h2>
-        <p>Edite os prêmios abaixo. Eles aparecem automaticamente na roleta.</p>
-        <div id="listaPremios"></div>
-        <button type="button" id="adicionarPremio" class="btn-secundario">＋ ADICIONAR PRÊMIO</button>
-    </div>
-
-
-
     <img src="https://i.ibb.co/fGSdKZcg/images.jpg" class="logo" alt="Confeita Mais">
 
     <h1>🎡 Roleta Confeita Mais</h1>
 
-    <p class="subtitulo">Gire uma vez e descubra seu prêmio! ✨</p>
+    <p class="subtitulo">Preencha as informações 🍫</p>
 
     <div id="formParticipante" class="form-participante">
         <div class="campo">
@@ -437,26 +386,24 @@ h1 {
             <label for="whatsappInput">WhatsApp</label>
             <input type="tel" id="whatsappInput" placeholder="(83) 9XXXX-XXXX" autocomplete="tel">
         </div>
+        <button id="enviarDados">ENVIAR</button>
     </div>
 
     <div id="erroForm" class="erro-form"></div>
 
-    <div class="roleta-area">
-        <div class="ponteiro"></div>
-        <canvas id="roleta" width="700" height="700"></canvas>
-    </div>
-
-    <div class="instrucao-girar">
-        👆 <strong>Puxe a roleta com o dedo para girar</strong><br>
-        ou clique no botão abaixo: <strong>GIRAR A ROLETA 🎁</strong>
-    </div>
-
     <div id="mensagemAguarde">
         ⏳ <strong>Aguarde!</strong><br>
-        Estamos enviando seus dados e preparando sua roleta. Assim que terminar, ela vai girar automaticamente. ✨
+        Estamos enviando seus dados e preparando sua roleta. ✨
     </div>
 
-    <button id="girar">GIRAR A ROLETA 🎁</button>
+    <div class="roleta-area">
+        <div class="ponteiro"></div>
+        <canvas id="roleta" width="700" height="700" class="bloqueada"></canvas>
+    </div>
+
+    <div id="instrucaoGirar" class="instrucao-girar">
+        🔒 <strong>Envie seus dados acima</strong> para liberar a roleta.
+    </div>
 
     <div id="resultado">
         <div class="parabens">🎉 PARABÉNS! 🎉</div>
@@ -500,7 +447,7 @@ const cores = ["#5a3b18", "#d6a65b", "#8a5f2a", "#e5c17b", "#70491f"];
 
 const canvas = document.getElementById("roleta");
 const ctx = canvas.getContext("2d");
-const botao = document.getElementById("girar");
+const botaoEnviar = document.getElementById("enviarDados");
 const resultado = document.getElementById("resultado");
 const premioTexto = document.getElementById("premioTexto");
 const premioObs = document.getElementById("premioObs");
@@ -514,6 +461,7 @@ const nomeInput = document.getElementById("nomeInput");
 const whatsappInput = document.getElementById("whatsappInput");
 const erroForm = document.getElementById("erroForm");
 const mensagemAguarde = document.getElementById("mensagemAguarde");
+const instrucaoGirar = document.getElementById("instrucaoGirar");
 
 let quantidade = premios.length;
 let angulo = (Math.PI * 2) / quantidade;
@@ -522,6 +470,11 @@ const anguloPonteiro = -Math.PI / 2;
 let rotacao = 0;
 let processando = false;
 let animandoAutomaticamente = false;
+
+// Controla se a roleta já pode ser girada com o dedo (só depois do envio dos dados)
+let rodaLiberada = false;
+// Guarda o resultado sorteado pelo servidor, aguardando o giro manual do usuário
+let dadosPendentes = null;
 
 function quebrarTexto(texto, maxCaracteres) {
     const palavras = texto.split(" ");
@@ -554,56 +507,6 @@ function mostrarErro(mensagem) {
 function limparErro() {
     erroForm.style.display = "none";
     erroForm.textContent = "";
-}
-
-
-function renderizarEditorPremios() {
-    const lista = document.getElementById("listaPremios");
-    if (!lista) return;
-    lista.innerHTML = "";
-
-    premios.forEach((premio, indice) => {
-        const div = document.createElement("div");
-        div.className = "premio-editor";
-        div.innerHTML = `
-            <input type="text" value="${String(premio.nome || "").replace(/"/g, "&quot;")}" placeholder="Nome do prêmio">
-            <input type="text" value="${String(premio.obs || "").replace(/"/g, "&quot;")}" placeholder="Observação">
-            <input type="text" value="${String(premio.validade || "").replace(/"/g, "&quot;")}" placeholder="Validade">
-            <button type="button" class="btn-remover">🗑️ Remover este prêmio</button>
-        `;
-
-        const inputs = div.querySelectorAll("input");
-        inputs[0].addEventListener("input", e => {
-            premios[indice].nome = e.target.value;
-            desenharRoleta();
-        });
-        inputs[1].addEventListener("input", e => {
-            premios[indice].obs = e.target.value;
-            desenharRoleta();
-        });
-        inputs[2].addEventListener("input", e => {
-            premios[indice].validade = e.target.value;
-            desenharRoleta();
-        });
-
-        div.querySelector(".btn-remover").addEventListener("click", () => {
-            if (premios.length <= 2) {
-                alert("A roleta precisa ter pelo menos 2 prêmios.");
-                return;
-            }
-            premios.splice(indice, 1);
-            renderizarEditorPremios();
-            atualizarConfiguracaoRoleta();
-            desenharRoleta();
-        });
-
-        lista.appendChild(div);
-    });
-}
-
-function atualizarConfiguracaoRoleta() {
-    quantidade = premios.length;
-    angulo = (Math.PI * 2) / quantidade;
 }
 
 function desenharRoleta() {
@@ -707,8 +610,6 @@ function lerCacheLocal() {
 
 function esconderFormulario() {
     formParticipante.style.display = "none";
-    const painel = document.getElementById("painelPremios");
-    if (painel) painel.style.display = "none";
 }
 
 function montarMensagemWhatsApp(dados) {
@@ -744,10 +645,10 @@ function mostrarResultado(dados, comConfete) {
     whatsapp.href = "https://wa.me/" + NUMERO_CONFEITA + "?text=" + encodeURIComponent(mensagem);
     whatsapp.style.display = "inline-block";
 
-    botao.disabled = true;
-    botao.textContent = "PARTICIPAÇÃO REALIZADA ✓";
-
     esconderFormulario();
+    instrucaoGirar.style.display = "none";
+    canvas.classList.add("bloqueada");
+    rodaLiberada = false;
 
     if (comConfete) {
         criarConfetes();
@@ -757,9 +658,16 @@ function mostrarResultado(dados, comConfete) {
 function mostrarBloqueio(mensagem) {
     bloqueadoTexto.textContent = mensagem || "Envie o print do seu resultado para a Confeita Mais.";
     bloqueado.style.display = "block";
-    botao.disabled = true;
-    botao.textContent = "VOCÊ JÁ PARTICIPOU ✓";
     esconderFormulario();
+    instrucaoGirar.style.display = "none";
+    canvas.classList.add("bloqueada");
+    rodaLiberada = false;
+}
+
+function liberarInstrucaoParaGirar() {
+    instrucaoGirar.classList.add("liberada");
+    instrucaoGirar.innerHTML = '👆 <strong>Dados enviados!</strong> Agora arraste a roleta com o dedo para girar.';
+    canvas.classList.remove("bloqueada");
 }
 
 (function inicializar() {
@@ -821,20 +729,22 @@ async function registrarParticipacao(nome, whatsapp) {
 }
 
 function travarControles() {
-    botao.disabled = true;
+    botaoEnviar.disabled = true;
     nomeInput.disabled = true;
     whatsappInput.disabled = true;
 }
 
 function destravarControles(textoBotao) {
-    botao.disabled = false;
+    botaoEnviar.disabled = false;
     nomeInput.disabled = false;
     whatsappInput.disabled = false;
-    botao.textContent = textoBotao;
+    botaoEnviar.textContent = textoBotao;
 }
 
-async function iniciarParticipacao() {
-    if (processando || botao.disabled) return;
+// Envia nome/whatsapp para o servidor. Ao ter sucesso, guarda o prêmio sorteado
+// e libera a roleta para ser girada manualmente com o dedo (sem giro automático).
+async function enviarDados() {
+    if (processando || botaoEnviar.disabled) return;
 
     limparErro();
 
@@ -855,8 +765,8 @@ async function iniciarParticipacao() {
 
     processando = true;
     travarControles();
-    const textoOriginalBotao = botao.textContent;
-    botao.textContent = "ENVIANDO...";
+    const textoOriginalBotao = botaoEnviar.textContent;
+    botaoEnviar.textContent = "ENVIANDO...";
     mensagemAguarde.style.display = "block";
 
     let respostaServidor;
@@ -892,23 +802,39 @@ async function iniciarParticipacao() {
         indice = Math.floor(Math.random() * quantidade);
     }
 
-    girarAteIndice(indice, function() {
-        const infoVisual = premios[indice] || {};
+    const infoVisual = premios[indice] || {};
 
-        const dadosFinais = {
-            participou: true,
-            nome: nome,
-            premio: respostaServidor.premio || infoVisual.nome,
-            obs: infoVisual.obs || "",
-            validade: respostaServidor.validade || infoVisual.validade,
-            codigo: respostaServidor.codigo || "—",
-            indice: indice
-        };
+    dadosPendentes = {
+        participou: true,
+        nome: nome,
+        premio: respostaServidor.premio || infoVisual.nome,
+        obs: infoVisual.obs || "",
+        validade: respostaServidor.validade || infoVisual.validade,
+        codigo: respostaServidor.codigo || "—",
+        indice: indice
+    };
 
-        salvarCacheLocal(dadosFinais);
-        mostrarResultado(dadosFinais, true);
-        mensagemAguarde.style.display = "none";
-        processando = false;
+    processando = false;
+    mensagemAguarde.style.display = "none";
+    rodaLiberada = true;
+
+    esconderFormulario();
+    liberarInstrucaoParaGirar();
+}
+
+// Dispara o giro até o índice sorteado (chamado só depois de um arraste de verdade)
+function executarGiroFinal() {
+    if (!dadosPendentes) return;
+
+    rodaLiberada = false; // impede giros extras enquanto anima ou depois
+    const dados = dadosPendentes;
+    dadosPendentes = null;
+
+    instrucaoGirar.style.display = "none";
+
+    girarAteIndice(dados.indice, function() {
+        salvarCacheLocal(dados);
+        mostrarResultado(dados, true);
     });
 }
 
@@ -925,14 +851,14 @@ function pontoRelativoAoCentro(evento) {
     return { x: x - centro, y: y - centro };
 }
 
-function centroDoClique(evento) {
+function dentroDaRoleta(evento) {
     const ponto = pontoRelativoAoCentro(evento);
-    const distancia = Math.hypot(ponto.x, ponto.y);
-    return distancia <= 105;
+    const raioMax = canvas.width / 2 - 8;
+    return Math.hypot(ponto.x, ponto.y) <= raioMax;
 }
 
 // ===============================
-// GIRAR ARRASTANDO COM O DEDO
+// GIRAR ARRASTANDO COM O DEDO (única forma de girar)
 // ===============================
 
 let arrastando = false;
@@ -946,14 +872,9 @@ function anguloDoPonteiro(evento) {
     return Math.atan2(ponto.y, ponto.x);
 }
 
-function dentroDaRoleta(evento) {
-    const ponto = pontoRelativoAoCentro(evento);
-    const raioMax = canvas.width / 2 - 8;
-    return Math.hypot(ponto.x, ponto.y) <= raioMax;
-}
-
 canvas.addEventListener("pointerdown", function(evento) {
-    if (processando || botao.disabled || animandoAutomaticamente) return;
+    // só é possível arrastar depois que os dados forem enviados com sucesso
+    if (!rodaLiberada || animandoAutomaticamente) return;
     if (!dentroDaRoleta(evento)) return;
 
     arrastando = true;
@@ -968,8 +889,6 @@ canvas.addEventListener("pointerdown", function(evento) {
 });
 
 canvas.addEventListener("pointermove", function(evento) {
-    canvas.classList.toggle("centro-ativo", !arrastando && centroDoClique(evento) && !botao.disabled);
-
     if (!arrastando) return;
 
     const anguloAtual = anguloDoPonteiro(evento);
@@ -1002,8 +921,8 @@ function finalizarArraste(evento) {
     const girouOSuficiente =
         anguloAcumuladoArraste > 0.35 || Math.abs(velocidadeAngularArraste) > 0.0025;
 
-    if (girouOSuficiente) {
-        iniciarParticipacao();
+    if (girouOSuficiente && rodaLiberada && dadosPendentes) {
+        executarGiroFinal();
     }
 }
 
@@ -1013,40 +932,10 @@ canvas.addEventListener("pointerleave", function(evento) {
     if (arrastando) finalizarArraste(evento);
 });
 
-// ===============================
-// TOQUE NO CENTRO / BOTÃO (mantidos)
-// ===============================
 
-botao.addEventListener("click", iniciarParticipacao);
 
-canvas.addEventListener("click", function(evento) {
-    if (centroDoClique(evento)) {
-        iniciarParticipacao();
-    }
-});
+botaoEnviar.addEventListener("click", enviarDados);
 
-document.getElementById("adicionarPremio")?.addEventListener("click", () => {
-    premios.push({
-        nome: "Novo Prêmio",
-        obs: "Descrição do prêmio",
-        validade: "VÁLIDO HOJE"
-    });
-    atualizarConfiguracaoRoleta();
-    renderizarEditorPremios();
-    desenharRoleta();
-});
-
-// O painel de edição de prêmios só aparece para a administração,
-// acessando o link com ?admin=1 no final (ex: seusite.com/roleta.html?admin=1)
-(function controlarPainelAdmin() {
-    const params = new URLSearchParams(window.location.search);
-    const painel = document.getElementById("painelPremios");
-    if (painel && params.get("admin") === "1") {
-        painel.style.display = "block";
-    }
-})();
-
-renderizarEditorPremios();
 desenharRoleta();
 </script>
 
