@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roleta Confeita Mais</title>
+
+<style>
+:root {
+    --marrom-escuro: #3b250f;
+    --marrom: #5a3b18;
+    --marrom-claro: #805b2c;
+    --dourado: #c99a52;
+    --dourado-claro: #e6c27a;
+    --creme: #fff8e9;
+    --branco: #ffffff;
+    --verde: #25D366;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+    background: radial-gradient(circle at top, #805b2c 0%, #5a3b18 45%, #3b250f 100%);
+    color: white;
+    overflow-x: hidden;
+}
+
+.container {
+    width: 100%;
+    max-width: 680px;
+    padding: 30px 20px 35px;
+    text-align: center;
+    border-radius: 30px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 25px 70px rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+}
+
+.logo {
+    width: 145px;
+    height: 145px;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    border: 4px solid var(--dourado);
+    box-shadow: 0 0 30px rgba(230,194,122,0.4);
+}
+
+h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 34px;
+    color: var(--dourado-claro);
+    margin-bottom: 8px;
+}
+
+.subtitulo {
+    color: var(--creme);
+    font-size: 16px;
+    margin-bottom: 28px;
+}
+
+.roleta-area {
+    position: relative;
+    width: min(90vw, 520px);
+    height: min(90vw, 520px);
+    margin: 0 auto 28px;
+}
+
+#roleta {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+}
+
+.ponteiro {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    width: 0;
+    height: 0;
+    border-left: 21px solid transparent;
+    border-right: 21px solid transparent;
+    border-top: 48px solid var(--dourado);
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
+}
+
+#girar {
+    border: none;
+    outline: none;
+    padding: 17px 50px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--dourado-claro), var(--dourado));
+    color: var(--marrom-escuro);
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+    transition: 0.2s;
+}
+
+#girar:hover { transform: translateY(-3px) scale(1.03); }
+#girar:active { transform: scale(0.97); }
+#girar:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+#resultado {
+    display: none;
+    margin-top: 28px;
+    padding: 28px 18px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(201,154,82,0.30), rgba(255,255,255,0.08));
+    border: 1px solid var(--dourado);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: aparecer 0.6s ease;
+}
+
+.parabens {
+    font-size: 30px;
+    font-weight: 900;
+    color: var(--dourado-claro);
+    margin-bottom: 12px;
+}
+
+.premio {
+    font-size: 25px;
+    font-weight: 900;
+    color: white;
+    line-height: 1.35;
+    margin-bottom: 6px;
+}
+
+.premio-obs {
+    font-size: 14px;
+    color: var(--creme);
+    opacity: 0.85;
+    margin-bottom: 15px;
+}
+
+.validade {
+    display: inline-block;
+    padding: 9px 16px;
+    border-radius: 30px;
+    background: var(--dourado);
+    color: var(--marrom-escuro);
+    font-weight: 900;
+    font-size: 15px;
+    margin-bottom: 18px;
+}
+
+.print {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--creme);
+}
+
+.print strong { color: var(--dourado-claro); }
+
+.whatsapp {
+    display: none;
+    margin-top: 20px;
+    padding: 14px 25px;
+    border-radius: 50px;
+    background: var(--verde);
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 7px 20px rgba(0,0,0,0.25);
+}
+
+#bloqueado {
+    display: none;
+    margin-top: 25px;
+    padding: 22px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.18);
+}
+
+#bloqueado strong {
+    display: block;
+    color: var(--dourado-claro);
+    font-size: 23px;
+    margin-bottom: 10px;
+}
+
+#bloqueado span {
+    color: var(--creme);
+    line-height: 1.5;
+}
+
+.confete {
+    position: fixed;
+    top: -20px;
+    width: 9px;
+    height: 15px;
+    z-index: 9999;
+    pointer-events: none;
+    animation: cair linear forwards;
+}
+
+@keyframes cair {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes aparecer {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 600px) {
+    body { padding: 10px; align-items: flex-start; padding-top: 20px; }
+    .container { padding: 23px 12px 28px; border-radius: 24px; }
+    .logo { width: 115px; height: 115px; }
+    h1 { font-size: 27px; }
+    .subtitulo { font-size: 14px; }
+    .roleta-area { width: 92vw; height: 92vw; }
+    #girar { padding: 15px 40px; font-size: 18px; }
+    .parabens { font-size: 25px; }
+    .premio { font-size: 21px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <img src="https://i.ibb.co/fGSdKZcg/images.jpg" class="logo" alt="Confeita Mais">
+
+    <h1>🎡 Roleta Confeita Mais</h1>
+
+    <p class="subtitulo">Gire uma vez e descubra seu prêmio! ✨</p>
+
+    <div class="roleta-area">
+        <div class="ponteiro"></div>
+        <canvas id="roleta" width="700" height="700"></canvas>
+    </div>
+
+    <button id="girar">GIRAR A ROLETA 🎁</button>
+
+    <div id="resultado">
+        <div class="parabens">🎉 PARABÉNS! 🎉</div>
+        <div class="premio" id="premioTexto"></div>
+        <div class="premio-obs" id="premioObs"></div>
+        <div class="validade" id="validadeTexto"></div>
+        <div class="print">
+            📸 <strong>TIRE UM PRINT DESTA TELA!</strong>
+            <br><br>
+            Envie o print para a <strong>Confeita Mais</strong> para confirmar seu prêmio.
+        </div>
+    </div>
+
+    <a id="whatsapp" class="whatsapp" target="_blank" rel="noopener noreferrer">
+        📲 ENVIAR RESULTADO PELO WHATSAPP
+    </a>
+
+    <div id="bloqueado">
+        <strong>🔒 VOCÊ JÁ PARTICIPOU!</strong>
+        <span>
+            </strong>
+            <br><br>
+            Envie o print do seu resultado para a Confeita Mais.
+        </span>
+    </div>
+
+</div>
+
+<script>
+const premios = [
+    {
+        nome: "Cupom 5% OFF",
+        obs: "Válido na próxima compra",
+        validade: "VÁLIDO NA PRÓXIMA COMPRA"
+    },
+    {
+        nome: "Saco de Confeitar Profissional",
+        obs: "Brinde para retirar hoje",
+        validade: "BRINDE VÁLIDO HOJE"
+    },
+    {
+        nome: "2º Corante pela Metade",
+        obs: "Compre 1 corante e leve o 2º com desconto",
+        validade: "OFERTA VÁLIDA HOJE"
+    },
+    {
+        nome: "Glitter Decorativo",
+        obs: "Brinde para retirar hoje",
+        validade: "BRINDE VÁLIDO HOJE"
+    },
+    {
+        nome: "Frete Grátis",
+        obs: "Válido na próxima compra",
+        validade: "VÁLIDO NA PRÓXIMA COMPRA"
+    }
+];
+
+const cores = ["#5a3b18", "#d6a65b", "#8a5f2a", "#e5c17b", "#70491f"];
+
+const canvas = document.getElementById("roleta");
+const ctx = canvas.getContext("2d");
+const botao = document.getElementById("girar");
+const resultado = document.getElementById("resultado");
+const premioTexto = document.getElementById("premioTexto");
+const premioObs = document.getElementById("premioObs");
+const validadeTexto = document.getElementById("validadeTexto");
+const bloqueado = document.getElementById("bloqueado");
+const whatsapp = document.getElementById("whatsapp");
+
+const quantidade = premios.length;
+const angulo = (Math.PI * 2) / quantidade;
+let rotacao = 0;
+let girando = false;
+
+function quebrarTexto(texto, maxCaracteres) {
+    const palavras = texto.split(" ");
+    let linhas = [];
+    let linha = "";
+
+    palavras.forEach(palavra => {
+        const teste = linha + palavra + " ";
+        if (teste.length <= maxCaracteres) {
+            linha = teste;
+        } else {
+            linhas.push(linha.trim());
+            linha = palavra + " ";
+        }
+    });
+
+    if (linha) linhas.push(linha.trim());
+    return linhas;
+}
+
+function desenharRoleta() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const centro = canvas.width / 2;
+    const raio = canvas.width / 2 - 8;
+
+    for (let i = 0; i < quantidade; i++) {
+        const inicio = rotacao + i * angulo;
+        const fim = inicio + angulo;
+
+        ctx.beginPath();
+        ctx.moveTo(centro, centro);
+        ctx.arc(centro, centro, raio, inicio, fim);
+        ctx.closePath();
+        ctx.fillStyle = cores[i];
+        ctx.fill();
+
+        ctx.strokeStyle = "#fff8e9";
+        ctx.lineWidth = 6;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(centro, centro);
+        ctx.rotate(inicio + angulo / 2);
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#ffffff";
+
+        const premio = premios[i];
+        const linhasNome = quebrarTexto(premio.nome, 17);
+        const linhasObs = premio.obs ? quebrarTexto(premio.obs, 20) : [];
+
+        const alturaNome = 21;
+        const alturaObs = 14;
+        const totalLinhas = linhasNome.length + linhasObs.length;
+        let posY = -((totalLinhas - 1) * alturaNome) / 2 - (linhasObs.length ? 4 : 0);
+
+        ctx.font = "bold 20px Arial";
+        linhasNome.forEach(linha => {
+            ctx.fillText(linha, raio - 25, posY);
+            posY += alturaNome;
+        });
+
+        if (linhasObs.length) {
+            ctx.font = "italic 12px Arial";
+            linhasObs.forEach(linha => {
+                ctx.fillText(linha, raio - 25, posY);
+                posY += alturaObs;
+            });
+        }
+
+        ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(centro, centro, 66, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff8e9";
+    ctx.fill();
+    ctx.strokeStyle = "#d6a65b";
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    ctx.fillStyle = "#5a3b18";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 18px Georgia";
+    ctx.fillText("CONFEITA", centro, centro - 11);
+    ctx.fillText("MAIS", centro, centro + 13);
+}
+
+function criarConfetes() {
+    for (let i = 0; i < 120; i++) {
+        const confete = document.createElement("div");
+        confete.className = "confete";
+        confete.style.left = Math.random() * 100 + "vw";
+        confete.style.background = cores[Math.floor(Math.random() * cores.length)];
+        confete.style.animationDuration = 2 + Math.random() * 3 + "s";
+        document.body.appendChild(confete);
+        setTimeout(() => confete.remove(), 5500);
+    }
+}
+
+const numeroWhatsApp = "558398884504";
+
+function mostrarResultado(dados) {
+    resultado.style.display = "block";
+    premioTexto.textContent = "🎁 " + dados.premio;
+    premioObs.textContent = dados.obs || "";
+    validadeTexto.textContent = dados.validade;
+
+    const mensagem =
+`Olá, Confeita Mais! 🎉
+
+Participei da Roleta VIP!
+
+🎁 Meu prêmio:
+${dados.premio}
+
+📌 Condição:
+${dados.validade}
+
+Estou enviando o print da tela para confirmar meu prêmio.`;
+
+    whatsapp.href = "https://wa.me/" + numeroWhatsApp + "?text=" + encodeURIComponent(mensagem);
+    whatsapp.style.display = "inline-block";
+
+    botao.disabled = true;
+    botao.textContent = "PARTICIPAÇÃO REALIZADA ✓";
+
+    criarConfetes();
+}
+
+const dadosSalvos = localStorage.getItem("confeitaMaisRoleta");
+
+if (dadosSalvos) {
+    botao.disabled = true;
+    botao.textContent = "VOCÊ JÁ PARTICIPOU ✓";
+    bloqueado.style.display = "block";
+}
+
+botao.addEventListener("click", function() {
+    if (girando) return;
+    if (localStorage.getItem("confeitaMaisRoleta")) return;
+
+    girando = true;
+    botao.disabled = true;
+
+    const voltas = 6 + Math.random() * 2;
+    const anguloExtra = Math.random() * Math.PI * 2;
+    const inicio = rotacao;
+    const finalRotacao = inicio + voltas * Math.PI * 2 + anguloExtra;
+    const duracao = 6000;
+    const inicioTempo = performance.now();
+
+    function animar(tempo) {
+        const progresso = Math.min((tempo - inicioTempo) / duracao, 1);
+        const suavizado = 1 - Math.pow(1 - progresso, 4);
+
+        rotacao = inicio + (finalRotacao - inicio) * suavizado;
+        desenharRoleta();
+
+        if (progresso < 1) {
+            requestAnimationFrame(animar);
+        } else {
+            rotacao = ((finalRotacao % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+            desenharRoleta();
+
+            
+            const anguloPonteiro = -Math.PI / 2;
+            const diferenca = (((anguloPonteiro - rotacao) % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+            const indice = Math.floor(diferenca / angulo) % quantidade;
+
+            const dados = {
+                participou: true,
+                premio: premios[indice].nome,
+                obs: premios[indice].obs,
+                validade: premios[indice].validade,
+                indice: indice,
+                data: new Date().toLocaleString("pt-BR")
+            };
+
+            localStorage.setItem("confeitaMaisRoleta", JSON.stringify(dados));
+            mostrarResultado(dados);
+            girando = false;
+        }
+    }
+
+    requestAnimationFrame(animar);
+});
+
+desenharRoleta();
+</script>
+
+</body>
+</html>
