@@ -15,6 +15,7 @@
     --creme: #fff8e9;
     --branco: #ffffff;
     --verde: #25D366;
+    --vermelho: #d9534f;
 }
 
 * {
@@ -71,6 +72,63 @@ h1 {
     margin-bottom: 28px;
 }
 
+.form-participante {
+    max-width: 380px;
+    margin: 0 auto 26px;
+    text-align: left;
+}
+
+.campo {
+    margin-bottom: 14px;
+}
+
+.campo label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    color: var(--dourado-claro);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.campo input {
+    width: 100%;
+    padding: 13px 16px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(230,194,122,0.5);
+    background: rgba(255,255,255,0.12);
+    color: var(--creme);
+    font-size: 16px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.campo input::placeholder {
+    color: rgba(255,248,233,0.55);
+}
+
+.campo input:focus {
+    border-color: var(--dourado-claro);
+    background: rgba(255,255,255,0.18);
+    box-shadow: 0 0 0 3px rgba(230,194,122,0.2);
+}
+
+.erro-form {
+    display: none;
+    background: rgba(217,83,79,0.18);
+    border: 1px solid rgba(217,83,79,0.55);
+    color: #ffdcdb;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    max-width: 380px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
 .roleta-area {
     position: relative;
     width: min(90vw, 520px);
@@ -85,6 +143,11 @@ h1 {
     border-radius: 50%;
     background: white;
     box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+    cursor: default;
+}
+
+#roleta.centro-ativo {
+    cursor: pointer;
 }
 
 .ponteiro {
@@ -162,6 +225,15 @@ h1 {
     font-weight: 900;
     font-size: 15px;
     margin-bottom: 18px;
+}
+
+.codigo {
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--dourado-claro);
+    margin-bottom: 15px;
+    letter-spacing: 1px;
 }
 
 .print {
@@ -249,6 +321,19 @@ h1 {
 
     <p class="subtitulo">Gire uma vez e descubra seu prêmio! ✨</p>
 
+    <div id="formParticipante" class="form-participante">
+        <div class="campo">
+            <label for="nomeInput">Nome</label>
+            <input type="text" id="nomeInput" placeholder="Digite seu nome" autocomplete="name">
+        </div>
+        <div class="campo">
+            <label for="whatsappInput">WhatsApp</label>
+            <input type="tel" id="whatsappInput" placeholder="(83) 9XXXX-XXXX" autocomplete="tel">
+        </div>
+    </div>
+
+    <div id="erroForm" class="erro-form"></div>
+
     <div class="roleta-area">
         <div class="ponteiro"></div>
         <canvas id="roleta" width="700" height="700"></canvas>
@@ -261,6 +346,7 @@ h1 {
         <div class="premio" id="premioTexto"></div>
         <div class="premio-obs" id="premioObs"></div>
         <div class="validade" id="validadeTexto"></div>
+        <span class="codigo" id="codigoTexto"></span>
         <div class="print">
             📸 <strong>TIRE UM PRINT DESTA TELA!</strong>
             <br><br>
@@ -273,10 +359,8 @@ h1 {
     </a>
 
     <div id="bloqueado">
-        <strong>🔒 VOCÊ JÁ PARTICIPOU!</strong>
-        <span>
-            </strong>
-            <br><br>
+        <strong>🔒 Você já participou desta promoção!</strong>
+        <span id="bloqueadoTexto">
             Envie o print do seu resultado para a Confeita Mais.
         </span>
     </div>
@@ -284,6 +368,9 @@ h1 {
 </div>
 
 <script>
+const NUMERO_CONFEITA = "5583XXXXXXXXX";
+const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyTwR1iRer_N3IB3L13mW6FFW8mQmB18gti0dxVuxTVLrQEnpTmFwj-6ox6YAL-rDxb/exec";
+
 const premios = [
     {
         nome: "Cupom 5% OFF",
@@ -321,13 +408,21 @@ const resultado = document.getElementById("resultado");
 const premioTexto = document.getElementById("premioTexto");
 const premioObs = document.getElementById("premioObs");
 const validadeTexto = document.getElementById("validadeTexto");
+const codigoTexto = document.getElementById("codigoTexto");
 const bloqueado = document.getElementById("bloqueado");
+const bloqueadoTexto = document.getElementById("bloqueadoTexto");
 const whatsapp = document.getElementById("whatsapp");
+const formParticipante = document.getElementById("formParticipante");
+const nomeInput = document.getElementById("nomeInput");
+const whatsappInput = document.getElementById("whatsappInput");
+const erroForm = document.getElementById("erroForm");
 
 const quantidade = premios.length;
 const angulo = (Math.PI * 2) / quantidade;
+const anguloPonteiro = -Math.PI / 2;
+
 let rotacao = 0;
-let girando = false;
+let processando = false;
 
 function quebrarTexto(texto, maxCaracteres) {
     const palavras = texto.split(" ");
@@ -346,6 +441,20 @@ function quebrarTexto(texto, maxCaracteres) {
 
     if (linha) linhas.push(linha.trim());
     return linhas;
+}
+
+function normalizarWhatsApp(valor) {
+    return String(valor || "").replace(/\D/g, "");
+}
+
+function mostrarErro(mensagem) {
+    erroForm.textContent = mensagem;
+    erroForm.style.display = "block";
+}
+
+function limparErro() {
+    erroForm.style.display = "none";
+    erroForm.textContent = "";
 }
 
 function desenharRoleta() {
@@ -430,55 +539,96 @@ function criarConfetes() {
     }
 }
 
-const numeroWhatsApp = "558398884504";
+const CHAVE_LOCAL = "confeitaMaisRoleta";
 
-function mostrarResultado(dados) {
-    resultado.style.display = "block";
-    premioTexto.textContent = "🎁 " + dados.premio;
-    premioObs.textContent = dados.obs || "";
-    validadeTexto.textContent = dados.validade;
+function salvarCacheLocal(dados) {
+    try {
+        localStorage.setItem(CHAVE_LOCAL, JSON.stringify(dados));
+    } catch (e) {}
+}
 
-    const mensagem =
+function lerCacheLocal() {
+    try {
+        const bruto = localStorage.getItem(CHAVE_LOCAL);
+        return bruto ? JSON.parse(bruto) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function esconderFormulario() {
+    formParticipante.style.display = "none";
+}
+
+function montarMensagemWhatsApp(dados) {
+    return (
 `Olá, Confeita Mais! 🎉
 
 Participei da Roleta VIP!
 
+👤 Nome: ${dados.nome}
+
 🎁 Meu prêmio:
 ${dados.premio}
 
-📌 Condição:
+📌 Validade:
 ${dados.validade}
 
-Estou enviando o print da tela para confirmar meu prêmio.`;
+🔑 Código:
+${dados.codigo}
 
-    whatsapp.href = "https://wa.me/" + numeroWhatsApp + "?text=" + encodeURIComponent(mensagem);
+Estou enviando o print da tela para confirmar meu prêmio.`
+    );
+}
+
+function mostrarResultado(dados, comConfete) {
+    resultado.style.display = "block";
+    premioTexto.textContent = "🎁 " + dados.premio;
+    premioObs.textContent = dados.obs || "";
+    validadeTexto.textContent = dados.validade;
+    codigoTexto.textContent = "🔑 Código: " + dados.codigo;
+
+    const mensagem = montarMensagemWhatsApp(dados);
+
+    whatsapp.href = "https://wa.me/" + NUMERO_CONFEITA + "?text=" + encodeURIComponent(mensagem);
     whatsapp.style.display = "inline-block";
 
     botao.disabled = true;
     botao.textContent = "PARTICIPAÇÃO REALIZADA ✓";
 
-    criarConfetes();
+    esconderFormulario();
+
+    if (comConfete) {
+        criarConfetes();
+    }
 }
 
-const dadosSalvos = localStorage.getItem("confeitaMaisRoleta");
-
-if (dadosSalvos) {
+function mostrarBloqueio(mensagem) {
+    bloqueadoTexto.textContent = mensagem || "Envie o print do seu resultado para a Confeita Mais.";
+    bloqueado.style.display = "block";
     botao.disabled = true;
     botao.textContent = "VOCÊ JÁ PARTICIPOU ✓";
-    bloqueado.style.display = "block";
+    esconderFormulario();
 }
 
-botao.addEventListener("click", function() {
-    if (girando) return;
-    if (localStorage.getItem("confeitaMaisRoleta")) return;
+(function inicializar() {
+    const cache = lerCacheLocal();
+    if (cache && cache.participou && cache.premio && cache.codigo) {
+        mostrarResultado(cache, false);
+    }
+})();
 
-    girando = true;
-    botao.disabled = true;
+function girarAteIndice(indiceAlvo, aoTerminar) {
+    const alvoMod = (((anguloPonteiro - (indiceAlvo * angulo + angulo / 2)) % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
 
-    const voltas = 6 + Math.random() * 2;
-    const anguloExtra = Math.random() * Math.PI * 2;
+    const rotacaoAtualMod = ((rotacao % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+    let diferencaAteAlvo = alvoMod - rotacaoAtualMod;
+    diferencaAteAlvo = ((diferencaAteAlvo % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+
+    const voltasExtras = 6 + Math.floor(Math.random() * 2);
     const inicio = rotacao;
-    const finalRotacao = inicio + voltas * Math.PI * 2 + anguloExtra;
+    const finalRotacao = inicio + voltasExtras * Math.PI * 2 + diferencaAteAlvo;
+
     const duracao = 6000;
     const inicioTempo = performance.now();
 
@@ -494,28 +644,144 @@ botao.addEventListener("click", function() {
         } else {
             rotacao = ((finalRotacao % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
             desenharRoleta();
-
-            
-            const anguloPonteiro = -Math.PI / 2;
-            const diferenca = (((anguloPonteiro - rotacao) % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-            const indice = Math.floor(diferenca / angulo) % quantidade;
-
-            const dados = {
-                participou: true,
-                premio: premios[indice].nome,
-                obs: premios[indice].obs,
-                validade: premios[indice].validade,
-                indice: indice,
-                data: new Date().toLocaleString("pt-BR")
-            };
-
-            localStorage.setItem("confeitaMaisRoleta", JSON.stringify(dados));
-            mostrarResultado(dados);
-            girando = false;
+            aoTerminar();
         }
     }
 
     requestAnimationFrame(animar);
+}
+
+async function registrarParticipacao(nome, whatsapp) {
+    const resposta = await fetch(URL_APPS_SCRIPT, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ nome: nome, whatsapp: whatsapp })
+    });
+
+    if (!resposta.ok) {
+        throw new Error("Falha na comunicação com o servidor (HTTP " + resposta.status + ").");
+    }
+
+    const json = await resposta.json();
+    return json;
+}
+
+function travarControles() {
+    botao.disabled = true;
+    nomeInput.disabled = true;
+    whatsappInput.disabled = true;
+}
+
+function destravarControles(textoBotao) {
+    botao.disabled = false;
+    nomeInput.disabled = false;
+    whatsappInput.disabled = false;
+    botao.textContent = textoBotao;
+}
+
+async function iniciarParticipacao() {
+    if (processando || botao.disabled) return;
+
+    limparErro();
+
+    const nome = nomeInput.value.trim();
+    const whatsappNormalizado = normalizarWhatsApp(whatsappInput.value);
+
+    if (nome.length < 2) {
+        mostrarErro("Digite seu nome completo.");
+        nomeInput.focus();
+        return;
+    }
+
+    if (whatsappNormalizado.length < 10) {
+        mostrarErro("Digite um WhatsApp válido, com DDD.");
+        whatsappInput.focus();
+        return;
+    }
+
+    processando = true;
+    travarControles();
+    const textoOriginalBotao = botao.textContent;
+    botao.textContent = "ENVIANDO...";
+
+    let respostaServidor;
+
+    try {
+        respostaServidor = await registrarParticipacao(nome, whatsappNormalizado);
+    } catch (erro) {
+        processando = false;
+        destravarControles(textoOriginalBotao);
+        mostrarErro("Não foi possível conectar agora. Verifique sua internet e tente novamente.");
+        return;
+    }
+
+    if (!respostaServidor || respostaServidor.sucesso !== true) {
+        processando = false;
+
+        if (respostaServidor && respostaServidor.jaParticipou) {
+            salvarCacheLocal({ participou: true, bloqueado: true });
+            mostrarBloqueio("🔒 Você já participou desta promoção!");
+            return;
+        }
+
+        destravarControles(textoOriginalBotao);
+        mostrarErro((respostaServidor && respostaServidor.mensagem) || "Não foi possível registrar sua participação. Tente novamente.");
+        return;
+    }
+
+    let indice = Number(respostaServidor.indice);
+
+    if (!Number.isInteger(indice) || indice < 0 || indice >= quantidade) {
+        indice = Math.floor(Math.random() * quantidade);
+    }
+
+    girarAteIndice(indice, function() {
+        const infoVisual = premios[indice] || {};
+
+        const dadosFinais = {
+            participou: true,
+            nome: nome,
+            premio: respostaServidor.premio || infoVisual.nome,
+            obs: infoVisual.obs || "",
+            validade: respostaServidor.validade || infoVisual.validade,
+            codigo: respostaServidor.codigo || "—",
+            indice: indice
+        };
+
+        salvarCacheLocal(dadosFinais);
+        mostrarResultado(dadosFinais, true);
+        processando = false;
+    });
+}
+
+function centroDoClique(evento) {
+    const retangulo = canvas.getBoundingClientRect();
+    const escalaX = canvas.width / retangulo.width;
+    const escalaY = canvas.height / retangulo.height;
+
+    const x = (evento.clientX - retangulo.left) * escalaX;
+    const y = (evento.clientY - retangulo.top) * escalaY;
+
+    const centro = canvas.width / 2;
+    const distancia = Math.hypot(x - centro, y - centro);
+
+    return distancia <= 70;
+}
+
+botao.addEventListener("click", iniciarParticipacao);
+
+canvas.addEventListener("click", function(evento) {
+    if (centroDoClique(evento)) {
+        iniciarParticipacao();
+    }
+});
+
+canvas.addEventListener("mousemove", function(evento) {
+    canvas.classList.toggle("centro-ativo", centroDoClique(evento) && !botao.disabled);
+});
+
+canvas.addEventListener("mouseleave", function() {
+    canvas.classList.remove("centro-ativo");
 });
 
 desenharRoleta();
