@@ -134,6 +134,7 @@ h1 {
     width: min(90vw, 520px);
     height: min(90vw, 520px);
     margin: 0 auto 28px;
+    touch-action: none;
 }
 
 #roleta {
@@ -143,11 +144,16 @@ h1 {
     border-radius: 50%;
     background: white;
     box-shadow: 0 15px 40px rgba(0,0,0,0.45);
-    cursor: default;
+    cursor: grab;
+    touch-action: none;
 }
 
 #roleta.centro-ativo {
     cursor: pointer;
+}
+
+#roleta.arrastando {
+    cursor: grabbing;
 }
 
 .ponteiro {
@@ -344,12 +350,76 @@ h1 {
     .parabens { font-size: 25px; }
     .premio { font-size: 21px; }
 }
+
+.painel-premios {
+    width: min(100%, 420px);
+    margin: 0 auto 24px;
+    padding: 20px;
+    text-align: left;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(230,194,122,0.45);
+}
+.painel-premios h2 { color: var(--dourado-claro); margin-bottom: 6px; font-size: 21px; }
+.painel-premios p { color: var(--creme); font-size: 13px; margin-bottom: 15px; }
+.premio-editor {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 7px;
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.16);
+}
+.premio-editor input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(230,194,122,0.45);
+    background: rgba(255,255,255,0.10);
+    color: var(--creme);
+    outline: none;
+}
+.premio-editor input:focus { border-color: var(--dourado-claro); }
+.btn-remover {
+    border: none;
+    border-radius: 10px;
+    padding: 9px;
+    cursor: pointer;
+    font-weight: bold;
+    background: rgba(217,83,79,0.25);
+    color: #ffdcdb;
+}
+.btn-secundario {
+    width: 100%;
+    border: 1px solid var(--dourado);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    background: rgba(201,154,82,0.18);
+    color: var(--dourado-claro);
+    font-weight: bold;
+}
+@media (min-width: 900px) {
+    .container { max-width: 760px; }
+    .painel-premios { max-width: 520px; }
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="container">
+
+    <div id="painelPremios" class="painel-premios">
+        <h2>🎁 Prêmios da Roleta</h2>
+        <p>Edite os prêmios abaixo. Eles aparecem automaticamente na roleta.</p>
+        <div id="listaPremios"></div>
+        <button type="button" id="adicionarPremio" class="btn-secundario">＋ ADICIONAR PRÊMIO</button>
+    </div>
+
+
 
     <img src="https://i.ibb.co/fGSdKZcg/images.jpg" class="logo" alt="Confeita Mais">
 
@@ -376,7 +446,7 @@ h1 {
     </div>
 
     <div class="instrucao-girar">
-        👆 <strong>Para girar, toque no centro da roleta</strong><br>
+        👆 <strong>Puxe a roleta com o dedo para girar</strong><br>
         ou clique no botão abaixo: <strong>GIRAR A ROLETA 🎁</strong>
     </div>
 
@@ -418,31 +488,11 @@ const NUMERO_CONFEITA = "558398884504";
 const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyTwR1iRer_N3IB3L13mW6FFW8mQmB18gti0dxVuxTVLrQEnpTmFwj-6ox6YAL-rDxb/exec";
 
 const premios = [
-    {
-        nome: "Cupom 5% OFF",
-        obs: "Válido na próxima compra",
-        validade: "VÁLIDO NA PRÓXIMA COMPRA"
-    },
-    {
-        nome: "Saco de Confeitar Profissional",
-        obs: "Brinde para retirar hoje",
-        validade: "BRINDE VÁLIDO HOJE"
-    },
-    {
-        nome: "2º Corante pela Metade",
-        obs: "Compre 1 corante e leve o 2º com desconto",
-        validade: "OFERTA VÁLIDA HOJE"
-    },
-    {
-        nome: "Glitter Decorativo",
-        obs: "Brinde para retirar hoje",
-        validade: "BRINDE VÁLIDO HOJE"
-    },
-    {
-        nome: "Frete Grátis",
-        obs: "Válido na próxima compra",
-        validade: "VÁLIDO NA PRÓXIMA COMPRA"
-    }
+    { nome: "Cupom 5% OFF", obs: "Válido na próxima compra", validade: "VÁLIDO NA PRÓXIMA COMPRA" },
+    { nome: "Saco de Confeitar Profissional", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" },
+    { nome: "2º Corante pela Metade", obs: "Compre 1 corante e leve o 2º com desconto", validade: "OFERTA VÁLIDA HOJE" },
+    { nome: "Glitter Decorativo", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" },
+    { nome: "Frete Grátis", obs: "Válido na próxima compra", validade: "VÁLIDO NA PRÓXIMA COMPRA" }
 ];
 
 const cores = ["#5a3b18", "#d6a65b", "#8a5f2a", "#e5c17b", "#70491f"];
@@ -464,12 +514,13 @@ const whatsappInput = document.getElementById("whatsappInput");
 const erroForm = document.getElementById("erroForm");
 const mensagemAguarde = document.getElementById("mensagemAguarde");
 
-const quantidade = premios.length;
-const angulo = (Math.PI * 2) / quantidade;
+let quantidade = premios.length;
+let angulo = (Math.PI * 2) / quantidade;
 const anguloPonteiro = -Math.PI / 2;
 
 let rotacao = 0;
 let processando = false;
+let animandoAutomaticamente = false;
 
 function quebrarTexto(texto, maxCaracteres) {
     const palavras = texto.split(" ");
@@ -502,6 +553,56 @@ function mostrarErro(mensagem) {
 function limparErro() {
     erroForm.style.display = "none";
     erroForm.textContent = "";
+}
+
+
+function renderizarEditorPremios() {
+    const lista = document.getElementById("listaPremios");
+    if (!lista) return;
+    lista.innerHTML = "";
+
+    premios.forEach((premio, indice) => {
+        const div = document.createElement("div");
+        div.className = "premio-editor";
+        div.innerHTML = `
+            <input type="text" value="${String(premio.nome || "").replace(/"/g, "&quot;")}" placeholder="Nome do prêmio">
+            <input type="text" value="${String(premio.obs || "").replace(/"/g, "&quot;")}" placeholder="Observação">
+            <input type="text" value="${String(premio.validade || "").replace(/"/g, "&quot;")}" placeholder="Validade">
+            <button type="button" class="btn-remover">🗑️ Remover este prêmio</button>
+        `;
+
+        const inputs = div.querySelectorAll("input");
+        inputs[0].addEventListener("input", e => {
+            premios[indice].nome = e.target.value;
+            desenharRoleta();
+        });
+        inputs[1].addEventListener("input", e => {
+            premios[indice].obs = e.target.value;
+            desenharRoleta();
+        });
+        inputs[2].addEventListener("input", e => {
+            premios[indice].validade = e.target.value;
+            desenharRoleta();
+        });
+
+        div.querySelector(".btn-remover").addEventListener("click", () => {
+            if (premios.length <= 2) {
+                alert("A roleta precisa ter pelo menos 2 prêmios.");
+                return;
+            }
+            premios.splice(indice, 1);
+            renderizarEditorPremios();
+            atualizarConfiguracaoRoleta();
+            desenharRoleta();
+        });
+
+        lista.appendChild(div);
+    });
+}
+
+function atualizarConfiguracaoRoleta() {
+    quantidade = premios.length;
+    angulo = (Math.PI * 2) / quantidade;
 }
 
 function desenharRoleta() {
@@ -559,11 +660,11 @@ function desenharRoleta() {
     }
 
     ctx.beginPath();
-    ctx.arc(centro, centro, 66, 0, Math.PI * 2);
+    ctx.arc(centro, centro, 82, 0, Math.PI * 2);
     ctx.fillStyle = "#fff8e9";
     ctx.fill();
     ctx.strokeStyle = "#d6a65b";
-    ctx.lineWidth = 8;
+    ctx.lineWidth = 10;
     ctx.stroke();
 
     ctx.fillStyle = "#5a3b18";
@@ -605,6 +706,8 @@ function lerCacheLocal() {
 
 function esconderFormulario() {
     formParticipante.style.display = "none";
+    const painel = document.getElementById("painelPremios");
+    if (painel) painel.style.display = "none";
 }
 
 function montarMensagemWhatsApp(dados) {
@@ -666,6 +769,8 @@ function mostrarBloqueio(mensagem) {
 })();
 
 function girarAteIndice(indiceAlvo, aoTerminar) {
+    animandoAutomaticamente = true;
+
     const alvoMod = (((anguloPonteiro - (indiceAlvo * angulo + angulo / 2)) % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
 
     const rotacaoAtualMod = ((rotacao % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
@@ -691,6 +796,7 @@ function girarAteIndice(indiceAlvo, aoTerminar) {
         } else {
             rotacao = ((finalRotacao % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
             desenharRoleta();
+            animandoAutomaticamente = false;
             aoTerminar();
         }
     }
@@ -805,7 +911,7 @@ async function iniciarParticipacao() {
     });
 }
 
-function centroDoClique(evento) {
+function pontoRelativoAoCentro(evento) {
     const retangulo = canvas.getBoundingClientRect();
     const escalaX = canvas.width / retangulo.width;
     const escalaY = canvas.height / retangulo.height;
@@ -814,10 +920,101 @@ function centroDoClique(evento) {
     const y = (evento.clientY - retangulo.top) * escalaY;
 
     const centro = canvas.width / 2;
-    const distancia = Math.hypot(x - centro, y - centro);
 
-    return distancia <= 70;
+    return { x: x - centro, y: y - centro };
 }
+
+function centroDoClique(evento) {
+    const ponto = pontoRelativoAoCentro(evento);
+    const distancia = Math.hypot(ponto.x, ponto.y);
+    return distancia <= 105;
+}
+
+// ===============================
+// GIRAR ARRASTANDO COM O DEDO
+// ===============================
+
+let arrastando = false;
+let ultimoAnguloPonteiro = 0;
+let anguloAcumuladoArraste = 0;
+let ultimoTempoArraste = 0;
+let velocidadeAngularArraste = 0;
+
+function anguloDoPonteiro(evento) {
+    const ponto = pontoRelativoAoCentro(evento);
+    return Math.atan2(ponto.y, ponto.x);
+}
+
+function dentroDaRoleta(evento) {
+    const ponto = pontoRelativoAoCentro(evento);
+    const raioMax = canvas.width / 2 - 8;
+    return Math.hypot(ponto.x, ponto.y) <= raioMax;
+}
+
+canvas.addEventListener("pointerdown", function(evento) {
+    if (processando || botao.disabled || animandoAutomaticamente) return;
+    if (!dentroDaRoleta(evento)) return;
+
+    arrastando = true;
+    anguloAcumuladoArraste = 0;
+    velocidadeAngularArraste = 0;
+    ultimoAnguloPonteiro = anguloDoPonteiro(evento);
+    ultimoTempoArraste = performance.now();
+
+    canvas.classList.add("arrastando");
+
+    try { canvas.setPointerCapture(evento.pointerId); } catch (e) {}
+});
+
+canvas.addEventListener("pointermove", function(evento) {
+    canvas.classList.toggle("centro-ativo", !arrastando && centroDoClique(evento) && !botao.disabled);
+
+    if (!arrastando) return;
+
+    const anguloAtual = anguloDoPonteiro(evento);
+
+    // menor caminho angular entre o último ponto e o atual
+    let delta = anguloAtual - ultimoAnguloPonteiro;
+    delta = Math.atan2(Math.sin(delta), Math.cos(delta));
+
+    const agora = performance.now();
+    const dt = Math.max(agora - ultimoTempoArraste, 1);
+
+    velocidadeAngularArraste = delta / dt;
+    anguloAcumuladoArraste += Math.abs(delta);
+
+    rotacao += delta;
+    desenharRoleta();
+
+    ultimoAnguloPonteiro = anguloAtual;
+    ultimoTempoArraste = agora;
+});
+
+function finalizarArraste(evento) {
+    if (!arrastando) return;
+    arrastando = false;
+    canvas.classList.remove("arrastando");
+
+    try { canvas.releasePointerCapture(evento.pointerId); } catch (e) {}
+
+    // só conta como "girar" se realmente moveu a roleta de forma perceptível
+    const girouOSuficiente =
+        anguloAcumuladoArraste > 0.35 || Math.abs(velocidadeAngularArraste) > 0.0025;
+
+    if (girouOSuficiente) {
+        iniciarParticipacao();
+    }
+}
+
+canvas.addEventListener("pointerup", finalizarArraste);
+canvas.addEventListener("pointercancel", finalizarArraste);
+canvas.addEventListener("pointerleave", function(evento) {
+    if (arrastando) finalizarArraste(evento);
+});
+
+// ===============================
+// TOQUE NO CENTRO / BOTÃO (mantidos)
+// ===============================
 
 botao.addEventListener("click", iniciarParticipacao);
 
@@ -827,14 +1024,18 @@ canvas.addEventListener("click", function(evento) {
     }
 });
 
-canvas.addEventListener("mousemove", function(evento) {
-    canvas.classList.toggle("centro-ativo", centroDoClique(evento) && !botao.disabled);
+document.getElementById("adicionarPremio")?.addEventListener("click", () => {
+    premios.push({
+        nome: "Novo Prêmio",
+        obs: "Descrição do prêmio",
+        validade: "VÁLIDO HOJE"
+    });
+    atualizarConfiguracaoRoleta();
+    renderizarEditorPremios();
+    desenharRoleta();
 });
 
-canvas.addEventListener("mouseleave", function() {
-    canvas.classList.remove("centro-ativo");
-});
-
+renderizarEditorPremios();
 desenharRoleta();
 </script>
 
