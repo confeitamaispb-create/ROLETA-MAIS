@@ -183,6 +183,42 @@ h1 {
 #girar:active { transform: scale(0.97); }
 #girar:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
+#mensagemAguarde {
+    display: none;
+    max-width: 380px;
+    margin: 0 auto 18px;
+    padding: 14px 18px;
+    border-radius: 16px;
+    background: rgba(230,194,122,0.18);
+    border: 1px solid var(--dourado);
+    color: var(--creme);
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 1.45;
+    animation: pulsar 1.2s ease-in-out infinite;
+}
+
+.instrucao-girar {
+    max-width: 360px;
+    margin: -12px auto 18px;
+    padding: 11px 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(230,194,122,0.45);
+    color: var(--creme);
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.instrucao-girar strong {
+    color: var(--dourado-claro);
+}
+
+@keyframes pulsar {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.72; transform: scale(0.98); }
+}
+
 #resultado {
     display: none;
     margin-top: 28px;
@@ -339,6 +375,16 @@ h1 {
         <canvas id="roleta" width="700" height="700"></canvas>
     </div>
 
+    <div class="instrucao-girar">
+        👆 <strong>Para girar, toque no centro da roleta</strong><br>
+        ou clique no botão abaixo: <strong>GIRAR A ROLETA 🎁</strong>
+    </div>
+
+    <div id="mensagemAguarde">
+        ⏳ <strong>Aguarde!</strong><br>
+        Estamos enviando seus dados e preparando sua roleta. Assim que terminar, ela vai girar automaticamente. ✨
+    </div>
+
     <button id="girar">GIRAR A ROLETA 🎁</button>
 
     <div id="resultado">
@@ -416,6 +462,7 @@ const formParticipante = document.getElementById("formParticipante");
 const nomeInput = document.getElementById("nomeInput");
 const whatsappInput = document.getElementById("whatsappInput");
 const erroForm = document.getElementById("erroForm");
+const mensagemAguarde = document.getElementById("mensagemAguarde");
 
 const quantidade = premios.length;
 const angulo = (Math.PI * 2) / quantidade;
@@ -703,6 +750,7 @@ async function iniciarParticipacao() {
     travarControles();
     const textoOriginalBotao = botao.textContent;
     botao.textContent = "ENVIANDO...";
+    mensagemAguarde.style.display = "block";
 
     let respostaServidor;
 
@@ -710,6 +758,7 @@ async function iniciarParticipacao() {
         respostaServidor = await registrarParticipacao(nome, whatsappNormalizado);
     } catch (erro) {
         processando = false;
+        mensagemAguarde.style.display = "none";
         destravarControles(textoOriginalBotao);
         mostrarErro("Não foi possível conectar agora. Verifique sua internet e tente novamente.");
         return;
@@ -717,6 +766,7 @@ async function iniciarParticipacao() {
 
     if (!respostaServidor || respostaServidor.sucesso !== true) {
         processando = false;
+        mensagemAguarde.style.display = "none";
 
         if (respostaServidor && respostaServidor.jaParticipou) {
             salvarCacheLocal({ participou: true, bloqueado: true });
@@ -750,6 +800,7 @@ async function iniciarParticipacao() {
 
         salvarCacheLocal(dadosFinais);
         mostrarResultado(dadosFinais, true);
+        mensagemAguarde.style.display = "none";
         processando = false;
     });
 }
