@@ -375,7 +375,7 @@ h1 {
 
     <h1>🎡 Roleta Confeita Mais</h1>
 
-    <p class="subtitulo">Preencha as informações 🍫</p>
+    <p class="subtitulo">Roleta premiada para pedidos acima de R$ 150,00 🍫</p>
 
     <div id="formParticipante" class="form-participante">
         <div class="campo">
@@ -433,14 +433,13 @@ h1 {
 
 <script>
 const NUMERO_CONFEITA = "558398884504";
-const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyTwR1iRer_N3IB3L13mW6FFW8mQmB18gti0dxVuxTVLrQEnpTmFwj-6ox6YAL-rDxb/exec";
-
+const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbxGCvjv4UXlMsRxXQbyVnhm1Y4dwbmDXhrXp7PxAMotJeSOHPD9932I-1gsgJpuk2SlMQ/exec";
 const premios = [
-    { nome: "Cupom 5% OFF", obs: "Válido na próxima compra", validade: "VÁLIDO NA PRÓXIMA COMPRA" },
-    { nome: "Saco de Confeitar Profissional", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" },
-    { nome: "2º Corante pela Metade", obs: "Compre 1 corante e leve o 2º com desconto", validade: "OFERTA VÁLIDA HOJE" },
-    { nome: "Glitter Decorativo", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" },
-    { nome: "Frete Grátis", obs: "Válido na próxima compra", validade: "VÁLIDO NA PRÓXIMA COMPRA" }
+    { nome: "1 Forma de Bolo", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" },
+    { nome: "Frete Grátis", obs: "Válido no próximo delivery", validade: "VÁLIDO NO PRÓXIMO DELIVERY" },
+    { nome: "10% OFF em Insumos", obs: "Válido na próxima compra de insumos", validade: "VÁLIDO NA PRÓXIMA COMPRA" },
+    { nome: "Sacos de Confeitar", obs: "Pacote de sacos descartáveis de alta qualidade", validade: "BRINDE VÁLIDO HOJE" },
+    { nome: "1 Bico de Confeitar", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" }
 ];
 
 const cores = ["#5a3b18", "#d6a65b", "#8a5f2a", "#e5c17b", "#70491f"];
@@ -591,21 +590,41 @@ function criarConfetes() {
     }
 }
 
-const CHAVE_LOCAL = "confeitaMaisRoleta";
+// ===============================
+// CONTROLE LOCAL POR PESSOA (não por aparelho)
+// Guardamos apenas os números de WhatsApp que já participaram NESTE navegador.
+// Isso NÃO bloqueia outras pessoas usando o mesmo celular/tablet, só impede
+// que o MESMO número tente de novo sem precisar esperar resposta do servidor.
+// ===============================
+const CHAVE_PARTICIPANTES = "confeitaMaisParticipantes";
 
-function salvarCacheLocal(dados) {
+// Limpa o antigo sistema de bloqueio (que travava por aparelho, não por pessoa).
+// Assim quem ficou preso por engano no navegador volta a poder participar.
+try { localStorage.removeItem("confeitaMaisRoleta"); } catch (e) {}
+
+
+function lerParticipantesLocais() {
     try {
-        localStorage.setItem(CHAVE_LOCAL, JSON.stringify(dados));
-    } catch (e) {}
+        const bruto = localStorage.getItem(CHAVE_PARTICIPANTES);
+        const lista = bruto ? JSON.parse(bruto) : [];
+        return Array.isArray(lista) ? lista : [];
+    } catch (e) {
+        return [];
+    }
 }
 
-function lerCacheLocal() {
+function jaParticipouLocalmente(whatsappNormalizado) {
+    return lerParticipantesLocais().includes(whatsappNormalizado);
+}
+
+function registrarParticipanteLocal(whatsappNormalizado) {
     try {
-        const bruto = localStorage.getItem(CHAVE_LOCAL);
-        return bruto ? JSON.parse(bruto) : null;
-    } catch (e) {
-        return null;
-    }
+        const lista = lerParticipantesLocais();
+        if (!lista.includes(whatsappNormalizado)) {
+            lista.push(whatsappNormalizado);
+            localStorage.setItem(CHAVE_PARTICIPANTES, JSON.stringify(lista));
+        }
+    } catch (e) {}
 }
 
 function esconderFormulario() {
@@ -669,13 +688,6 @@ function liberarInstrucaoParaGirar() {
     instrucaoGirar.innerHTML = '👆 <strong>Dados enviados!</strong> Agora arraste a roleta com o dedo para girar.';
     canvas.classList.remove("bloqueada");
 }
-
-(function inicializar() {
-    const cache = lerCacheLocal();
-    if (cache && cache.participou && cache.premio && cache.codigo) {
-        mostrarResultado(cache, false);
-    }
-})();
 
 function girarAteIndice(indiceAlvo, aoTerminar) {
     animandoAutomaticamente = true;
@@ -763,6 +775,13 @@ async function enviarDados() {
         return;
     }
 
+    // Checagem local por pessoa (não por aparelho): se ESTE número já
+    // participou neste navegador, bloqueia sem precisar chamar o servidor.
+    if (jaParticipouLocalmente(whatsappNormalizado)) {
+        mostrarBloqueio("🔒 Este WhatsApp já participou desta promoção!");
+        return;
+    }
+
     processando = true;
     travarControles();
     const textoOriginalBotao = botaoEnviar.textContent;
@@ -786,7 +805,7 @@ async function enviarDados() {
         mensagemAguarde.style.display = "none";
 
         if (respostaServidor && respostaServidor.jaParticipou) {
-            salvarCacheLocal({ participou: true, bloqueado: true });
+            registrarParticipanteLocal(whatsappNormalizado);
             mostrarBloqueio("🔒 Você já participou desta promoção!");
             return;
         }
@@ -803,6 +822,8 @@ async function enviarDados() {
     }
 
     const infoVisual = premios[indice] || {};
+
+    registrarParticipanteLocal(whatsappNormalizado);
 
     dadosPendentes = {
         participou: true,
@@ -833,7 +854,6 @@ function executarGiroFinal() {
     instrucaoGirar.style.display = "none";
 
     girarAteIndice(dados.indice, function() {
-        salvarCacheLocal(dados);
         mostrarResultado(dados, true);
     });
 }
