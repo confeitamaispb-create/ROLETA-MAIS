@@ -433,11 +433,11 @@ h1 {
 
 <script>
 const NUMERO_CONFEITA = "558398884504";
-const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbxGCvjv4UXlMsRxXQbyVnhm1Y4dwbmDXhrXp7PxAMotJeSOHPD9932I-1gsgJpuk2SlMQ/exec";
+const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyPGX3PVFmGWxBVv-aGECnL6w19D3DAorSY23b6HFZEIAcEN_6HZPQvtOuI1EQeFp3IQQ/exec";
 const premios = [
     { nome: "1 Forma de Bolo", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" },
-    { nome: "Frete Grátis", obs: "Válido no próximo delivery", validade: "VÁLIDO NO PRÓXIMO DELIVERY" },
-    { nome: "10% OFF em Insumos", obs: "Válido na próxima compra de insumos", validade: "VÁLIDO NA PRÓXIMA COMPRA" },
+    { nome: "Frete Grátis", obs: "Válido HOJE", validade: "VÁLIDO HOJE" },
+    { nome: "10% OFF em Insumos", obs: "Válido NA PROXIMA COMPRA", validade: "VÁLIDO NA PRÓXIMA COMPRA" },
     { nome: "Sacos de Confeitar", obs: "Pacote de sacos descartáveis de alta qualidade", validade: "BRINDE VÁLIDO HOJE" },
     { nome: "1 Bico de Confeitar", obs: "Brinde para retirar hoje", validade: "BRINDE VÁLIDO HOJE" }
 ];
@@ -815,13 +815,17 @@ async function enviarDados() {
         return;
     }
 
-    let indice = Number(respostaServidor.indice);
+    const indice = Number(respostaServidor.indice);
 
     if (!Number.isInteger(indice) || indice < 0 || indice >= quantidade) {
-        indice = Math.floor(Math.random() * quantidade);
+        processando = false;
+        mensagemAguarde.style.display = "none";
+        destravarControles(textoOriginalBotao);
+        mostrarErro("O servidor retornou um prêmio inválido. Tente novamente.");
+        return;
     }
 
-    const infoVisual = premios[indice] || {};
+    const infoVisual = premios[indice];
 
     registrarParticipanteLocal(whatsappNormalizado);
 
